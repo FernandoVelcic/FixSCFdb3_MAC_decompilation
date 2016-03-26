@@ -1,0 +1,31 @@
+(en C++)
+
+public: String __gc* GetMac() { Guid __gc* guid; if (CheckMac::UuidCreateSequential(ref guid) != 0) { String __gc* str; Interaction::MsgBox(S"UuidCreateSequential failed: {0}", MsgBoxStyle::OkOnly, 0); return str; } String __gc* mAC = guid->ToString()->Substring(0x18)->ToUpper(); return this->DisOrderMAC(mAC); }
+(En C#)
+
+public string GetMac() { Guid guid; if (UuidCreateSequential(ref guid) != 0) { string str; Interaction.MsgBox("UuidCreateSequential failed: {0}", MsgBoxStyle.OkOnly, null); return str; } string mAC = guid.ToString().Substring(0x18).ToUpper(); return this.DisOrderMAC(mAC); }
+
+Si se ejecuta la UuidCreateSequential correctamente devulve como resultado RPC_S_OK que es igual a 0
+
+Entonces tu error es uno de estos
+
+RPC_S_UUID_LOCAL_ONLY
+The UUID is guaranteed to be unique to this computer only.
+RPC_S_UUID_NO_ADDRESS
+Cannot get Ethernet or token-ring hardware address for this computer.
+
+The UuidCreateSequential function returns RPC_S_UUID_LOCAL_ONLY when the originating computer does not have an ethernet/token ring (IEEE 802.x) address. In this case, the generated UUID is a valid identifier, and is guaranteed to be unique among all UUIDs generated on the computer. However, the possibility exists that another computer without an ethernet/token ring address generated the identical UUID. Therefore you should never use this UUID to identify an object that is not strictly local to your computer. Computers with ethernet/token ring addresses generate UUIDs that are guaranteed to be globally unique.
+
+Tu problema es ya de Windows o tu tarjeta Ethernet, lo que puedes hacer es unsar un buen decompilador de .NET y eliminas la funcion IsOk() o sino borras su contenido y le pones return 1;
+
+
+Otra posibilidad es esta, abres el Addon.dll con un decompilador y te creas un nuevo dll, Simplemente reemplazas la GetMac funcction por esto
+
+public string GetMac() {
+Guid myMAC;
+memset(myMAC, 0, sizeof(myMAC));
+string mAC = myMAC.ToString().Substring(0x18).ToUpper();
+return mAC ;
+}
+
+eso si con el ultimo metodo no tienes que ejecutar el FixSCFdb2.MAC.exe
